@@ -1,0 +1,394 @@
+gplink-1.4.0 #1107 (May 24 2015)
+Copyright (c) 1998-2014 gputils project
+Listing File Generated: 7-27-2020  02:01:59
+ 
+ 
+Address  Value    Disassembly              Source
+-------  -----    -----------              ------
+                                                             LIST     P = P12F629
+                                           
+                                                             INCLUDE  "../PIC_INCLUDE/P12F629.INC"
+                                                   LIST
+                                           
+                                           ;==========================================================================
+                                           ;  MPASM PIC12F629 processor include
+                                           ; 
+                                           ;  (c) Copyright 1999-2011 Microchip Technology, All rights reserved
+                                           ;==========================================================================
+                                           
+                                                   NOLIST
+                                           
+002007   3e4a     addlw   0x4a                               __CONFIG _HS_OSC & _WDT_ON & _PWRTE_ON & _MCLRE_OFF & _BOREN_ON & _CP_ON & _CPD_ON
+                                           ;/*********************************************************************/
+                                           ;/* REQUIRES 20MHz EXTERNAL OSCILATOR FOR REQUIRED HIGH SPEED SIGNALS */
+                                           ;/*********************************************************************/
+                                           
+                                           ;/***************/
+                                           ;/* GPIO Lines. */
+                                           ;/***************/
+                                           ; GP0       - WS2812B LED Serial Data.
+                                           ; GP3       - Switch.
+                                           
+                                           ;/*************/
+                                           ;/* Constants */
+                                           ;/*************/
+                                           ; PORT A
+                                           GPIO_NEO_LED_DATA EQU      GP0                  ; WS2812B LED Serial Data.
+                                           GPIO_SWITCH       EQU      GP3                  ; Switch.
+                                           
+                                           ;/**********************/
+                                           ;/* Application flags. */
+                                           ;/**********************/
+                                           F_CYCLE           EQU      0x00                 ; Flag to cycle LEDs.
+                                           
+                                           NEO_ARRAY_SIZE    EQU      0x08                 ; Number of NEO LEDs in series.
+                                           
+                                           
+                                           ;/***************************************/
+                                           ;/* RAM Registers in BANK 0 (64 Bytes). */
+                                           ;/***************************************/
+                                           CBLOCK            0x20
+                                                             INT_W                         ; Temporary store for W during interupt.
+                                                             INT_STATUS                    ; Temporary store for STATUS during interupt.
+                                                             INT_FSR                       ; Temporary store for FSR during interupt.
+                                           
+                                                             APP_FLAGS                     ; Application flags.
+                                           
+                                                             RAND                          ; Random number.
+                                                             TEMP                          ; Temporary store.
+                                                             TEMP_FSR                      ; Temporary FSR store.
+                                                             NEO_LED_COUNT                 ; Count LEDs.
+                                                             NEO_LED_RGB_COUNT             ; Count LED colour byte data.
+                                                             NEO_LED_TEMP                  ; Temporary store.
+                                           
+                                                             NEO_LED_FADE_COUNT            ; Pointer to current fade value.
+                                                             NEO_LED_FADE1                 ; Direction to fade colour elements of LED 1.
+                                                             NEO_LED_FADE2                 ; Direction to fade colour elements of LED 2.
+                                                             NEO_LED_FADE3                 ; Direction to fade colour elements of LED 3.
+                                                             NEO_LED_FADE4                 ; Direction to fade colour elements of LED 4.
+                                                             NEO_LED_FADE5                 ; Direction to fade colour elements of LED 5.
+                                                             NEO_LED_FADE6                 ; Direction to fade colour elements of LED 6.
+                                                             NEO_LED_FADE7                 ; Direction to fade colour elements of LED 7.
+                                                             NEO_LED_FADE8                 ; Direction to fade colour elements of LED 8.
+                                           
+                                                             NEO_LED_G1_DATA               ; WS2812B LED 1 Green Data.
+                                                             NEO_LED_R1_DATA               ; WS2812B LED 1 Red Data.
+                                                             NEO_LED_B1_DATA               ; WS2812B LED 1 Blue Data.
+                                           
+                                                             NEO_LED_G2_DATA               ; WS2812B LED 2 Green Data.
+                                                             NEO_LED_R2_DATA               ; WS2812B LED 2 Red Data.
+                                                             NEO_LED_B2_DATA               ; WS2812B LED 2 Blue Data.
+                                           
+                                                             NEO_LED_G3_DATA               ; WS2812B LED 3 Green Data.
+                                                             NEO_LED_R3_DATA               ; WS2812B LED 3 Red Data.
+                                                             NEO_LED_B3_DATA               ; WS2812B LED 3 Blue Data.
+                                           
+                                                             NEO_LED_G4_DATA               ; WS2812B LED 4 Green Data.
+                                                             NEO_LED_R4_DATA               ; WS2812B LED 4 Red Data.
+                                                             NEO_LED_B4_DATA               ; WS2812B LED 4 Blue Data.
+                                           
+                                                             NEO_LED_G5_DATA               ; WS2812B LED 5 Green Data.
+                                                             NEO_LED_R5_DATA               ; WS2812B LED 5 Red Data.
+                                                             NEO_LED_B5_DATA               ; WS2812B LED 5 Blue Data.
+                                           
+                                                             NEO_LED_G6_DATA               ; WS2812B LED 6 Green Data.
+                                                             NEO_LED_R6_DATA               ; WS2812B LED 6 Red Data.
+                                                             NEO_LED_B6_DATA               ; WS2812B LED 6 Blue Data.
+                                           
+                                                             NEO_LED_G7_DATA               ; WS2812B LED 7 Green Data.
+                                                             NEO_LED_R7_DATA               ; WS2812B LED 7 Red Data.
+                                                             NEO_LED_B7_DATA               ; WS2812B LED 7 Blue Data.
+                                           
+                                                             NEO_LED_G8_DATA               ; WS2812B LED 8 Green Data.
+                                                             NEO_LED_R8_DATA               ; WS2812B LED 8 Red Data.
+                                                             NEO_LED_B8_DATA               ; WS2812B LED 8 Blue Data.
+                                           ENDC
+                                           
+                                           
+                                           
+                                                             CODE
+                                           
+                                           ;/**********************************/
+                                           ;/* Reset program location vector. */
+                                           ;/**********************************/
+                                                             ORG      0x0000
+                                           
+000000   1683     bsf     0x03, 0x5                          BSF      STATUS, RP0          ; Select Register bank 1
+000001   3008     movlw   0x08                               MOVLW    (1 << GPIO_SWITCH)
+000002   0085     movwf   0x05                               MOVWF    TRISIO               ; Set pins to input.
+000003   282a     goto    0x002a                             GOTO     INIT
+                                           
+                                           
+                                           
+                                           ;/*************************************/
+                                           ;/* Interupt program location vector. */
+                                           ;/*************************************/
+                                                             ORG      0x0004
+                                           
+000004   00a0     movwf   0x20             INT_HANDLE        MOVWF    INT_W                ; Store registers from application during interupt.
+000005   0803     movf    0x03, 0x0                          MOVFW    STATUS
+000006   00a1     movwf   0x21                               MOVWF    INT_STATUS
+000007   0804     movf    0x04, 0x0                          MOVFW    FSR
+000008   00a2     movwf   0x22                               MOVWF    INT_FSR
+                                           
+000009   1283     bcf     0x03, 0x5                          BCF      STATUS, RP0          ; Select Register bank 0
+                                           
+                                           
+00000a   1d0b     btfss   0x0b, 0x2                          BTFSS    INTCON, T0IF         ; Did a TIMER0 interupt trigger?
+00000b   2812     goto    0x0012                             GOTO     INT_TIMER0_END       ; TIMER0: LED update timer.
+                                           
+00000c   0e0e     swapf   0x0e, 0x0                          SWAPF    TMR1L, W             ; Simulate a random number generator from the current timer value of the other timer.
+00000d   06a4     xorwf   0x24, 0x1                          XORWF    RAND
+00000e   080f     movf    0x0f, 0x0                          MOVFW    TMR1H
+00000f   06a4     xorwf   0x24, 0x1                          XORWF    RAND
+000010   1423     bsf     0x23, 0x0                          BSF      APP_FLAGS, F_CYCLE   ; Periodically flag to update the colour values of the LEDs.
+                                           
+000011   110b     bcf     0x0b, 0x2        TIMER0_END        BCF      INTCON, T0IF         ; End of timer 0 interupt.
+                                           
+                                           
+000012   1c0c     btfss   0x0c, 0x0        INT_TIMER0_END    BTFSS    PIR1, TMR1IF         ; Did a TIMER1 interupt trigger?
+000013   2821     goto    0x0021                             GOTO     INT_TIMER1_END       ; TIMER1: Colour randomize timer.
+                                           
+000014   0801     movf    0x01, 0x0                          MOVFW    TMR0                 ; Simulate a random number generator from the current timer value of the other timer.
+000015   06a4     xorwf   0x24, 0x1                          XORWF    RAND
+000016   082a     movf    0x2a, 0x0                          MOVFW    NEO_LED_FADE_COUNT   ; Randomize the fade bit values for another LED on each timer interupt.
+000017   3e2b     addlw   0x2b                               ADDLW    NEO_LED_FADE1
+000018   0084     movwf   0x04                               MOVWF    FSR
+000019   0824     movf    0x24, 0x0                          MOVFW    RAND
+00001a   0080     movwf   0x00                               MOVWF    INDF
+00001b   0aaa     incf    0x2a, 0x1                          INCF     NEO_LED_FADE_COUNT   ; Do the next LED fade value on the next interupt.
+00001c   082a     movf    0x2a, 0x0                          MOVFW    NEO_LED_FADE_COUNT   ; If the last LED is done, point back to the first LED again.
+00001d   3a08     xorlw   0x08                               XORLW    NEO_ARRAY_SIZE
+00001e   1903     btfsc   0x03, 0x2                          BTFSC    STATUS, Z
+00001f   01aa     clrf    0x2a                               CLRF     NEO_LED_FADE_COUNT
+                                           
+000020   100c     bcf     0x0c, 0x0        TIMER1_END        BCF      PIR1, TMR1IF         ; End of timer 1 interupt.
+                                           
+                                           
+000021   0822     movf    0x22, 0x0        INT_TIMER1_END    MOVFW    INT_FSR              ; Restore registers for application to continue.
+000022   0084     movwf   0x04                               MOVWF    FSR
+000023   0821     movf    0x21, 0x0                          MOVFW    INT_STATUS
+000024   0083     movwf   0x03                               MOVWF    STATUS
+000025   0820     movf    0x20, 0x0                          MOVFW    INT_W
+000026   1503     bsf     0x03, 0x2                          BSF      STATUS, Z
+000027   1d21     btfss   0x21, 0x2                          BTFSS    INT_STATUS, Z
+000028   1103     bcf     0x03, 0x2                          BCF      STATUS, Z
+000029   0009     retfie                                     RETFIE
+                                           
+                                           
+                                           
+                                           ;/*******************************/
+                                           ;/* Initialise microcontroller. */
+                                           ;/*******************************/
+00002a   3008     movlw   0x08             INIT              MOVLW    (1 << GPIO_SWITCH)
+00002b   0095     movwf   0x15                               MOVWF    WPU                  ; Weak pull-ups on keys.
+00002c   0096     movwf   0x16                               MOVWF    IOC                  ; Interupt on change of keys.
+                                           
+00002d   300f     movlw   0x0f                               MOVLW    (1 << PSA)|(1 << PS0)|(1 << PS1)|(1 << PS2)
+00002e   0081     movwf   0x01                               MOVWF    OPTION_REG           ; Prescale watch dog timer.
+00002f   3001     movlw   0x01                               MOVLW    (1 << T1IE)          ; Start timer 1.
+000030   008c     movwf   0x0c                               MOVWF    PIE1
+                                           
+000031   30ff     movlw   0xff                               MOVLW    0xFF                 ; Tune micro-controller frequency for fastest.
+000032   0090     movwf   0x10                               MOVWF    OSCCAL
+                                           
+000033   1283     bcf     0x03, 0x5                          BCF      STATUS, RP0          ; Select Register bank 0
+                                           
+000034   3020     movlw   0x20                               MOVLW    0x20                 ; Clear all BANK 0 RAM values.
+000035   0084     movwf   0x04                               MOVWF    FSR
+000036   3040     movlw   0x40                               MOVLW    0x40
+000037   2097     call    0x0097                             CALL     CLEAR_RAM
+                                           
+000038   3007     movlw   0x07                               MOVLW    0x07                 ; Switch comparitor off.
+000039   0099     movwf   0x19                               MOVWF    CMCON
+                                           
+00003a   3003     movlw   0x03                               MOVLW    HIGH ORG_DATA_TABLES ; All lookup tables are in the top page of memory.
+00003b   008a     movwf   0x0a                               MOVWF    PCLATH
+                                           
+00003c   0185     clrf    0x05                               CLRF     GPIO                 ; Initialize GPIO Port values.
+                                           
+00003d   30e8     movlw   0xe8                               MOVLW    (1 << GIE)|(1 << PEIE)|(1 << GPIE)|(1 << T0IE)  ; Enable interupts.
+00003e   008b     movwf   0x0b                               MOVWF    INTCON               ; Configure timer interupts and enable interupts.
+00003f   018c     clrf    0x0c                               CLRF     PIR1                 ; Clear interupt flags.
+                                           
+000040   3015     movlw   0x15                               MOVLW    (1 << TMR1ON)|(1 << NOT_T1SYNC)|(1 << T1CKPS0) ; |(1 << T1CKPS1)
+000041   0090     movwf   0x10                               MOVWF    T1CON                ; Configure timer 1.
+                                           
+000042   0064     clrwdt                   LOOP              CLRWDT                        ; Tell CPU application still running when active.
+000043   1c23     btfss   0x23, 0x0                          BTFSS    APP_FLAGS, F_CYCLE   ; Update the NEO LEDs when flagged to.
+000044   2842     goto    0x0042                             GOTO     LOOP
+000045   1023     bcf     0x23, 0x0                          BCF      APP_FLAGS, F_CYCLE   ; Clear NEO LED update flag.
+000046   2049     call    0x0049                             CALL     NEO_LED_CYCLE        ; Update NEO LED colours.
+000047   2069     call    0x0069                             CALL     NEO_LED_REFRESH      ; Refresh NEO LEDs.
+000048   2842     goto    0x0042                             GOTO     LOOP
+                                           
+                                           
+                                           
+                                           ;/******************************/
+                                           ;/* Demo fading NEO LED array. */
+                                           ;/******************************/
+000049   3033     movlw   0x33             NEO_LED_CYCLE     MOVLW    NEO_LED_G1_DATA      ; Starting at the last LED data in the array of NEO LEDs.
+00004a   0084     movwf   0x04                               MOVWF    FSR
+00004b   3008     movlw   0x08                               MOVLW    NEO_ARRAY_SIZE       ; Itterate through all of the LED data in the NEO array.
+00004c   00a7     movwf   0x27                               MOVWF    NEO_LED_COUNT
+00004d   0804     movf    0x04, 0x0        NEO_LED_INIT_DATA MOVFW    FSR                  ; Temporarily store the indiect memory pointer.
+00004e   00a6     movwf   0x26                               MOVWF    TEMP_FSR
+00004f   0827     movf    0x27, 0x0                          MOVFW    NEO_LED_COUNT        ; Get the fade data for the current LED.
+000050   3e2a     addlw   0x2a                               ADDLW    (NEO_LED_FADE1 - 1)
+000051   0084     movwf   0x04                               MOVWF    FSR
+000052   0800     movf    0x00, 0x0                          MOVFW    INDF
+000053   00a5     movwf   0x25                               MOVWF    TEMP
+000054   0826     movf    0x26, 0x0                          MOVFW    TEMP_FSR             ; Restore the indiect memory pointer.
+000055   0084     movwf   0x04                               MOVWF    FSR
+000056   3003     movlw   0x03                               MOVLW    0x03                 ; Count the three primary colour data.
+000057   0ca5     rrf     0x25, 0x1        NEO_RGB_COUNT     RRF      TEMP                 ; Get the next bit of the fade data.
+000058   1c03     btfss   0x03, 0x0                          BTFSS    STATUS, C            ; If 0 fade primary colour down, if 1 fade primary colour up.
+000059   0a80     incf    0x00, 0x1                          INCF     INDF
+00005a   1803     btfsc   0x03, 0x0                          BTFSC    STATUS, C
+00005b   0380     decf    0x00, 0x1                          DECF     INDF
+00005c   1d03     btfss   0x03, 0x2                          BTFSS    STATUS, Z            ; If primary colour is value zero, undo the fade of the colour,
+00005d   2862     goto    0x0062                             GOTO     NEO_NO_UNDO          ; to prevent colour value going from full off to full on.
+00005e   1c03     btfss   0x03, 0x0                          BTFSS    STATUS, C            ; If 1 fade primary colour down, if 0 fade primary colour up.
+00005f   0380     decf    0x00, 0x1                          DECF     INDF
+000060   1803     btfsc   0x03, 0x0                          BTFSC    STATUS, C
+000061   0a80     incf    0x00, 0x1                          INCF     INDF
+000062   0a84     incf    0x04, 0x1        NEO_NO_UNDO       INCF     FSR                  ; Point to next primary colour for LED data or next LED data.
+000063   3eff     addlw   0xff                               ADDLW    0xFF                 ; Updata all primary colour data.
+000064   1d03     btfss   0x03, 0x2                          BTFSS    STATUS, Z
+000065   2857     goto    0x0057                             GOTO     NEO_RGB_COUNT
+000066   0ba7     decfsz  0x27, 0x1                          DECFSZ   NEO_LED_COUNT        ; Update all LED data.
+000067   284d     goto    0x004d                             GOTO     NEO_LED_INIT_DATA
+000068   0008     return                                     RETURN
+                                           
+                                           
+                                           
+                                           ;/******************************************/
+                                           ;/* Refresh the data on the NEO LED array. */
+                                           ;/******************************************/
+000069   138b     bcf     0x0b, 0x7        NEO_LED_REFRESH   BCF      INTCON, GIE          ; Disable interupts.
+                                           
+00006a   3033     movlw   0x33                               MOVLW    NEO_LED_G1_DATA      ; Point to first LED data byte.
+00006b   0084     movwf   0x04                               MOVWF    FSR
+00006c   3008     movlw   0x08                               MOVLW    NEO_ARRAY_SIZE       ; Update all LEDs in array.
+00006d   00a7     movwf   0x27                               MOVWF    NEO_LED_COUNT
+00006e   207b     call    0x007b           NEO_LED_UPDATE    CALL     NEO_SET_LED_RGB      ; Send RGB data to an LED in the array.
+00006f   0ba7     decfsz  0x27, 0x1                          DECFSZ   NEO_LED_COUNT
+000070   286e     goto    0x006e                             GOTO     NEO_LED_UPDATE
+000071   2074     call    0x0074                             CALL     NEO_RESET_LED_RGB    ; Send a low signal to indicate the end of data and a reset back to first LED.
+                                           
+000072   178b     bsf     0x0b, 0x7                          BSF      INTCON, GIE          ; Enable interupts.
+000073   0008     return                                     RETURN
+                                           
+                                           
+                                           
+                                           ;/*************************************************/
+                                           ;/* At the end of sending array data to NEO LEDs, */
+                                           ;/* a 100uS low signal is required to reset to    */
+                                           ;/* start of array, for next LED data update.     */
+                                           ;/*************************************************/
+000074   30ff     movlw   0xff             NEO_RESET_LED_RGB MOVLW    0xFF
+000075   0000     nop                      NEO_RESET_LOOP    NOP
+000076   0000     nop                                        NOP
+000077   3eff     addlw   0xff                               ADDLW    0xFF
+000078   1d03     btfss   0x03, 0x2                          BTFSS    STATUS, Z
+000079   2875     goto    0x0075                             GOTO     NEO_RESET_LOOP
+00007a   0008     return                                     RETURN
+                                           
+                                           
+                                           
+                                           ;/***********************************/
+                                           ;/* Send the RGB data to a NEO LED. */
+                                           ;/***********************************/
+00007b   3003     movlw   0x03             NEO_SET_LED_RGB   MOVLW    0x03                 ; Send three primary colour data.
+00007c   00a8     movwf   0x28                               MOVWF    NEO_LED_RGB_COUNT
+00007d   0800     movf    0x00, 0x0        SET_LED_NEXT      MOVFW    INDF                 ; Get the next primary colour data byte.
+00007e   00a9     movwf   0x29                               MOVWF    NEO_LED_TEMP
+00007f   3008     movlw   0x08                               MOVLW    0x08                 ; Send eight bits of data for the byte.
+000080   0da9     rlf     0x29, 0x1        NEO_SET_LED_LOOP  RLF      NEO_LED_TEMP         ; Get the next data bit into the carry flag.
+000081   1803     btfsc   0x03, 0x0                          BTFSC    STATUS, C            ; Send high or low signal depending on the carry flag.
+000082   2885     goto    0x0085                             GOTO     NEO_DO_BIT_HIGH
+000083   208d     call    0x008d                             CALL     NEO_BIT_LOW
+000084   2886     goto    0x0086                             GOTO     NEO_DO_BIT_LOW
+000085   2091     call    0x0091           NEO_DO_BIT_HIGH   CALL     NEO_BIT_HIGH
+000086   3eff     addlw   0xff             NEO_DO_BIT_LOW    ADDLW    0xFF                 ; Send the remaining bits of data for the byte.
+000087   1d03     btfss   0x03, 0x2                          BTFSS    STATUS, Z
+000088   2880     goto    0x0080                             GOTO     NEO_SET_LED_LOOP
+000089   0a84     incf    0x04, 0x1                          INCF     FSR                  ; Send the remaining primary colour data.
+00008a   0ba8     decfsz  0x28, 0x1                          DECFSZ   NEO_LED_RGB_COUNT
+00008b   287d     goto    0x007d                             GOTO     SET_LED_NEXT
+00008c   0008     return                                     RETURN
+                                           
+                                           
+                                           
+                                           ;/*************************************/
+                                           ;/* Send a low data bit to a NEO LED. */
+                                           ;/* TIMING BASED ON A 20MHz CRYSTAL   */
+                                           ;/* TO PROVIDE ACCURAGE PERIODS FOR   */
+                                           ;/* THE NEO LED ARRAY.                */
+                                           ;/*************************************/
+00008d   1405     bsf     0x05, 0x0        NEO_BIT_LOW       BSF      GPIO, GPIO_NEO_LED_DATA
+00008e   1405     bsf     0x05, 0x0                          BSF      GPIO, GPIO_NEO_LED_DATA
+00008f   1005     bcf     0x05, 0x0                          BCF      GPIO, GPIO_NEO_LED_DATA
+000090   0008     return                                     RETURN
+                                           
+                                           
+                                           
+                                           ;/**************************************/
+                                           ;/* Send a high data bit to a NEO LED. */
+                                           ;/* TIMING BASED ON A 20MHz CRYSTAL    */
+                                           ;/* TO PROVIDE ACCURAGE PERIODS FOR    */
+                                           ;/* THE NEO LED ARRAY.                 */
+                                           ;/**************************************/
+000091   1405     bsf     0x05, 0x0        NEO_BIT_HIGH      BSF      GPIO, GPIO_NEO_LED_DATA
+000092   1405     bsf     0x05, 0x0                          BSF      GPIO, GPIO_NEO_LED_DATA
+000093   1405     bsf     0x05, 0x0                          BSF      GPIO, GPIO_NEO_LED_DATA
+000094   1405     bsf     0x05, 0x0                          BSF      GPIO, GPIO_NEO_LED_DATA
+000095   1005     bcf     0x05, 0x0                          BCF      GPIO, GPIO_NEO_LED_DATA
+000096   0008     return                                     RETURN
+                                           
+                                           
+                                           
+                                           ;/*****************************/
+                                           ;/* Reset a RAM area to 0x00. */
+                                           ;/*                           */
+                                           ;/* CALL WITH:                */
+                                           ;/* FSR - Start RAM address.  */
+                                           ;/* W   - Byte clear count.   */
+                                           ;/*****************************/
+000097   0180     clrf    0x00             CLEAR_RAM         CLRF     INDF
+000098   0a84     incf    0x04, 0x1                          INCF     FSR
+000099   3eff     addlw   0xff                               ADDLW    0xFF                 ; Subtract 1.
+00009a   1d03     btfss   0x03, 0x2                          BTFSS    STATUS, Z
+00009b   2897     goto    0x0097                             GOTO     CLEAR_RAM
+00009c   0008     return                                     RETURN
+                                           
+                                           
+                                           
+                                                             ORG      0x0300
+                                           
+                                           ORG_DATA_TABLES
+                                           
+                                           
+                                           
+                                           ;/**************************/
+                                           ;/* Write data to user ID. */
+                                           ;/**************************/
+                                                             ORG      0x2000 ; Area for PIC ID - compiler will complain.
+                                           
+002000   0000     nop                                        DE       0x00, 0x0A, 0x00, 0x01 ; Product ID, Software Version
+002001   000a     dw      0x000a           
+002002   0000     nop                      
+002003   0001     dw      0x0001           
+                                           
+                                           
+                                           
+                                           ;/*************************/
+                                           ;/* Write data to EEPROM. */
+                                           ;/*************************/
+                                                             ORG      0x2100
+                                           
+                                           ORG_EEPROM_MEMORY
+                                           
+                                           
+                                           END
+                                           
